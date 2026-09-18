@@ -1,23 +1,44 @@
 #!/bin/sh
-set -e
+set -eu
 
-# Gamitin ang port galing environment, default 8080
-PORT=${PORT:-8080}
-echo "✅ Ginagamit na port: $PORT"
+PORT="${PORT:-8080}"
 
-# ✅ I-update ang Nginx config para sa tamang port
-sed -i "s/listen\s*[0-9]*;/listen $PORT;/g" /usr/local/openresty/nginx/conf/nginx.conf
+echo "======================================"
+echo "🚀 Starting Virgozki container"
+echo "🌐 Cloud Run PORT: $PORT"
+echo "======================================"
 
-# ✅ Simulan ang Xray sa background
-echo "🚀 Sinisimulan ang Xray..."
+# Replace the fixed Nginx port with Cloud Run's PORT
+sed -i "s/listen 8080 http2;/listen $PORT http2;/" \
+    /usr/local/openresty/nginx/conf/nginx.conf
+
+echo "🔍 Testing OpenResty configuration..."
+
+/usr/local/openresty/bin/openresty -t
+
+echo "🚀 Starting Xray..."
 /usr/local/bin/xray run -config /etc/xray.json &
 XRAY_PID=$!
 
-# ✅ Simulan ang OpenResty sa foreground (dapat ito ang huling tumakbo)
-echo "🌐 Sinisimulan ang OpenResty sa port $PORT..."
-exec /usr/local/openresty/bin/openresty -g "daemon off;"
+# Clean shutdown
+cleanup() {
+    echo "🛑 Stopping Xray..."
+    kill -TERM "$XRAY_PID" 2>/dev/null || true
+}
 
-# Kung mamatay ang alin man, patayin lahat
-wait $XRAY_PID
-echo "⚠️ Tumigil ang Xray, isinasara ang server..."
-kill -TERM 1
+trap cleanup TERM INT
+
+echo "🌐 Starting OpenResty on port $PORT..."
+
+/usr/local/openresty/bin/openresty -g "daemon off;" &
+NGINX_PID=$!
+
+# Keep both processes supervised
+wait "$NGINX_PID"
+STATUS=$?
+
+echo "⚠️ OpenResty stopped with status: $STATUS"
+
+cleanup
+
+exit "$STATUS"
