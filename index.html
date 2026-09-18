@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VIRGOZKI CONFIG PANEL</title>
+    <style>
+        :root {
+            --border: rgba(255, 255, 255, 0.18);
+            --border-accent: rgba(147, 197, 253, 0.35);
+            --text: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent: #93c5fd;
+            --success: #6ee7b7;
+            --warning: #fcd34d;
+            --error: #f87171;
+            --bg-fallback: #050b18;
+            --bg-solid: linear-gradient(135deg, #050b18 0%, #1a2b48 50%, #050b18 100%);
+        }
+
+        * {margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent;}
+
+        body {
+            min-height: 100vh;
+            color: var(--text);
+            padding: 16px 12px;
+            position: relative;
+            overflow-x: hidden;
+            background: var(--bg-solid);
+        }
+
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -2;
+            display: block;
+        }
+
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 11, 24, 0);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 540px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .vpn-status-card {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            text-align: center;
+        }
+
+        .vpn-status-card.connected {border-color: rgba(110, 231, 183, 0.4);}
+        .vpn-status-card.checking {border-color: rgba(252, 211, 77, 0.4);}
+        .vpn-status-card.disconnected {border-color: rgba(248, 113, 113, 0.4);}
+
+        .status-indicator {
+            width: 55px;
+            height: 55px;
+            margin: 0 auto 10px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            background: transparent;
+        }
+
+        .status-indicator.connected {border-color: var(--success); color: var(--success);}
+        .status-indicator.checking {border-color: var(--warning); color: var(--warning); animation: pulse 1.2s infinite;}
+        .status-indicator.disconnected {border-color: var(--error); color: var(--error);}
+
+        @keyframes pulse {
+            0% {box-shadow: 0 0 0 0 rgba(252,211,77,0.2);}
+            70% {box-shadow: 0 0 0 10px rgba(252,211,77,0);}
+            100% {box-shadow: 0 0 0 0 rgba(252,211,77,0);}
+        }
+
+        .status-text {font-size: 17px; font-weight: 700; margin-bottom: 3px;}
+        .status-subtext {font-size: 11px; color: var(--text-secondary);}
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .info-box {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .info-box.full {grid-column: 1 / -1;}
+        .info-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            word-break: break-all;
+        }
+
+        .info-value.success {color: var(--success);}
+
+        /* SYSTEM LOG BOX */
+        .system-log-box {
+            background: transparent;
+            border: 1px solid var(--border-accent);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .log-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .log-clear {
+            font-size: 11px;
+            color: var(--accent);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .log-clear:hover {color: var(--success);}
+
+        .log-content {
+            width: 100%;
+            min-height: 90px;
+            max-height: 120px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 10px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        .log-line {margin-bottom: 2px; word-break: break-all;}
+        .log-time {color: var(--accent); margin-right: 5px;}
+        .log-info {color: var(--text-secondary);}
+        .log-success {color: var(--success);}
+        .log-error {color: var(--error);}
+        .log-warning {color: var(--warning);}
+
+        /* MONITOR BOX */
+        .monitor-box {
+            background: transparent;
+            border: 1px solid var(--border-accent);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .monitor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .monitor-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .monitor-item {
+            padding: 8px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0);
+            border: 1px solid var(--border);
+        }
+
+        .monitor-item-label {
+            font-size: 9px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .monitor-item-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+            word-break: break-all;
+        }
+
+        .monitor-item-value.success {color: var(--success);}
+        .monitor-item-value.error {color: var(--error);}
+        .monitor-item-value.warning {color: var(--warning);}
+
+        /* MINI GRAPH */
+        .mini-graph-wrapper {
+            width: 100%;
+            height: 70px;
+            border-radius: 6px;
+            overflow: hidden;
+            background: rgba(0,0,0,0);
+            border: 1px solid var(--border);
+        }
+
+        .mini-graph-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .graph-note {
+            font-size: 9px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        .section {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .select-btn {
+            width: 100%;
+            padding: 10px 12px;
+            background: transparent;
+            border: 1px solid var(--border-accent);
+            border-radius: 6px;
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .select-btn:hover {background: rgba(147,197,253,0.06);}
+
+        .selected-value {
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--success);
+            font-weight: 500;
+            padding-left: 4px;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .option-btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 8px 10px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .option-btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .option-btn:hover {border-color: var(--accent);}
+
+        .config-box {
+            position: relative;
+            margin-top: 8px;
+        }
+
+        .config-text {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            padding-top: 32px;
+            background: rgba(0,0,0,0);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--success);
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            resize: none;
+            overflow-x: hidden;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            padding: 4px 8px;
+            background: transparent;
+            border: 1px solid var(--border-accent);
+            border-radius: 4px;
+            color: var(--accent);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {background: rgba(147,197,253,0.06);}
+
+        #floating-player {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            width: 140px;
+            background: rgba(5,11,24,0.7);
+            border: 1px solid var(--border-accent);
+            border-radius: 8px;
+            padding: 6px;
+            z-index: 99999;
+            user-select: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .player-drag-handle {
+            width: 100%;
+            padding: 2px 0;
+            margin-bottom: 4px;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            border-bottom: 1px solid rgba(147,197,253,0.2);
+        }
+
+        .player-drag-handle:active {cursor: grabbing;}
+        .drag-text {font-size: 8px; color: var(--accent); font-weight: 500;}
+
+        .player-title {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 5px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .player-controls {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .p-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 1px solid var(--accent);
+            background: transparent;
+            color: var(--accent);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .p-btn:hover {background: rgba(147,197,253,0.06);}
+
+        .modal {
+            position: fixed;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            background: var(--bg-solid);
+            z-index: 99999;
+            display: none;
+            flex-direction: column;
+            padding: 16px;
+            overflow: hidden;
+        }
+
+        .modal-bg-video {
+            position: absolute;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            object-fit: cover;
+            z-index: -1;
+            display: block;
+        }
+
+        .modal.show {display: flex;}
+
+        .modal-list {
+            flex:1;
+            overflow-y: auto;
+            margin-top: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .modal-item {
+            padding: 10px 14px;
+            margin-bottom: 5px;
+            background: rgba(0,0,0,0);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            color: var(--text);
+        }
+
+        .modal-item:hover,
+        .modal-item.selected {
+            border-color: var(--border-accent);
+            background: rgba(147,197,253,0.06);
+        }
+
+        .modal-close {
+            padding: 7px;
+            background: rgba(0,0,0,0);
+            border: 1px solid var(--border-accent);
+            border-radius: 6px;
+            color: var(--accent);
+            cursor: pointer;
+            text-align: center;
+            margin-top: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            position: relative;
+            z-index: 1;
+        }
+
+        #loading-screen {
+            position: fixed;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-solid);
+            z-index: 999999;
+            overflow: hidden;
+            transition: opacity 0.5s ease;
+        }
+
+        #loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-bg-video {
+            position: absolute;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            object-fit: cover;
+            z-index: -2;
+            display: block;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            background: rgba(5,11,24,0);
+            z-index: -1;
+        }
+
+        .load-text {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 6px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .load-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            position: relative;
+            z-index: 1;
+        }
+
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 15px 0;
+        }
+
+        @keyframes spin {
+            to {transform: rotate(360deg);}
+        }
+    </style>
+</head>
+
+<body>
+
+<video id="bg-video" autoplay muted loop playsinline preload="auto">
+    <source src="https://dl.dropboxusercontent.com/scl/fi/4ow0wjnznaf03cv12qkfb/ssstik.io_-ikoppie_1785393023125.mp4?rlkey=o9je28ockyfobm4243vu0un5s&dl=1" type="video/mp4">
+</video>
+
+<div class="bg-overlay"></div>
+
+<div id="loading-screen">
+    <video class="loading-bg-video" autoplay muted loop playsinline preload="auto">
+        <source src="https://dl.dropboxusercontent.com/scl/fi/4ow0wjnznaf03cv12qkfb/ssstik.io_-ikoppie_1785393023125.mp4?rlkey=o9je28ockyfobm4243vu0un5s&dl=1" type="video/mp4">
+    </video>
+
+    <div class="loading-overlay"></div>
+    <div class="load-text">VIRGOZKI PANEL</div>
+    <div class="loader-spinner"></div>
+    <div class="load-sub">WAIT SYSTEM LOADING ...</div>
+</div>
+
+<div class="container" id="main-content" style="display:none;">
+
+    <div class="vpn-status-card" id="main-status-card">
+        <div class="status-indicator" id="main-status-icon">⟳</div>
+        <div class="status-text" id="main-status-text">KUMOKUHA NG IMPORMASYON...</div>
+        <div class="status-subtext" id="main-status-desc">VIRGOZKI EDITION • LIBRENG INTERNET</div>
+    </div>
+
+    <div class="info-grid">
+
+        <div class="info-box">
+            <div class="info-label">HOST / ADDRESS</div>
+            <div class="info-value" id="info-host">---</div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-label">SNI / SERVER NAME</div>
+            <div class="info-value" id="info-sni">---</div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-label">PROTOCOL</div>
+            <div class="info-value" id="info-proto">VLESS</div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-label">TRANSPORT</div>
+            <div class="info-value" id="info-transport">WebSocket</div>
+        </div>
+
+    </div>
+
+    <!-- SYSTEM LOG SECTION -->
+    <div class="system-log-box">
+
+        <div class="log-header">
+            <div class="log-title">📋 SYSTEM LOG</div>
+            <div class="log-clear" id="clear-log">DELETE ALL LOG</div>
+        </div>
+
+        <div class="log-content" id="system-log-area"></div>
+
+    </div>
+
+    <div class="monitor-box">
+
+        <div class="monitor-header">
+            <div class="monitor-title">📊 REAL-TIME SERVER MONITOR</div>
+        </div>
+
+        <div class="monitor-grid">
+
+            <div class="monitor-item">
+                <div class="monitor-item-label">YOUR IP ADDRESS</div>
+                <div class="monitor-item-value" id="user-ip">---</div>
+            </div>
+
+            <div class="monitor-item">
+                <div class="monitor-item-label">YOUR COUNTRY</div>
+                <div class="monitor-item-value" id="user-country">---</div>
+            </div>
+
+            <div class="monitor-item">
+                <div class="monitor-item-label">YOUR CITY</div>
+                <div class="monitor-item-value" id="user-city">---</div>
+            </div>
+
+            <div class="monitor-item">
+                <div class="monitor-item-label">SERVER STATUS</div>
+                <div class="monitor-item-value" id="server-status">---</div>
+            </div>
+
+            <div class="monitor-item">
+                <div class="monitor-item-label">PING / LATENCY</div>
+                <div class="monitor-item-value" id="ping-value">---</div>
+            </div>
+
+            <div class="monitor-item">
+                <div class="monitor-item-label">SERVER UPTIME</div>
+                <div class="monitor-item-value success" id="server-uptime">---</div>
+            </div>
+
+        </div>
+
+        <div class="mini-graph-wrapper">
+            <canvas id="mini-ping-graph" class="mini-graph-canvas"></canvas>
+        </div>
+
+        <div class="graph-note">📈 VIRGOZKI CONFIG PANEL</div>
+
+    </div>
+
+    <div class="section">
+
+        <div class="section-header">
+            <div class="section-title">🔌 BUG HOST / ADDRESS</div>
+        </div>
+
+        <button class="select-btn" id="address-btn">
+            Pumili ng Address ▾
+        </button>
+
+        <div class="selected-value" id="address-selected">
+            Wala pang napipili
+        </div>
+
+    </div>
+
+    <div class="section">
+
+        <div class="section-header">
+            <div class="section-title">🛡️ SNI / SERVER NAME</div>
+        </div>
+
+        <button class="select-btn" id="sni-btn">
+            Pumili ng SNI ▾
+        </button>
+
+        <div class="selected-value" id="sni-selected">
+            Wala pang napipili
+        </div>
+
+    </div>
+
+    <div class="section">
+
+        <div class="section-header">
+            <div class="section-title">🔐 URI NG PROTOCOL</div>
+        </div>
+
+        <div class="btn-group" id="proto-buttons"></div>
+
+    </div>
+
+    <div class="section">
+
+        <div class="section-header">
+            <div class="section-title">📶 URI NG KONEKSYON</div>
+        </div>
+
+        <div class="btn-group" id="trans-buttons"></div>
+
+    </div>
+
+    <div class="section">
+
+        <div class="section-header">
+            <div class="section-title">📋 GENERATED CONFIG</div>
+        </div>
+
+        <div class="config-box">
+
+            <textarea class="config-text" id="config-display" readonly>---</textarea>
+
+            <button class="copy-btn" id="copy-btn">
+                COPY
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div id="floating-player">
+
+    <div class="player-drag-handle">
+        <span class="drag-text">⋮⋮ ILIPAT/DRAG</span>
+    </div>
+
+    <div class="player-title" id="song-name">
+        NEFFEX - Control
+    </div>
+
+    <div class="player-controls">
+
+        <button class="p-btn" id="prev" title="Nakaraan">⏮</button>
+
+        <button class="p-btn" id="play" title="I-play/I-hinto">▶</button>
+
+        <button class="p-btn" id="stop" title="Itigil">⏹</button>
+
+        <button class="p-btn" id="next" title="Susunod">⏭</button>
+
+    </div>
+
+</div>
+
+<div class="modal" id="address-modal">
+
+    <video class="modal-bg-video" autoplay muted loop playsinline preload="auto">
+        <source src="https://dl.dropboxusercontent.com/scl/fi/4ow0wjnznaf03cv12qkfb/ssstik.io_-ikoppie_1785393023125.mp4?rlkey=o9je28ockyfobm4243vu0un5s&dl=1" type="video/mp4">
+    </video>
+
+    <div class="section-title">🔌 PUMILI NG ADDRESS</div>
+
+    <div class="modal-list" id="address-list"></div>
+
+    <div class="modal-close" id="address-close">
+        ✕ TAPOS
+    </div>
+
+</div>
+
+<div class="modal" id="sni-modal">
+
+    <video class="modal-bg-video" autoplay muted loop playsinline preload="auto">
+        <source src="https://dl.dropboxusercontent.com/scl/fi/4ow0wjnznaf03cv12qkfb/ssstik.io_-ikoppie_1785393023125.mp4?rlkey=o9je28ockyfobm4243vu0un5s&dl=1" type="video/mp4">
+    </video>
+
+    <div class="section-title">🛡️ PUMILI NG SNI</div>
+
+    <div class="modal-list" id="sni-list"></div>
+
+    <div class="modal-close" id="sni-close">
+        ✕ TAPOS
+    </div>
+
+</div>
+
+<script>
+(function() {
+
+    const UUID = 'b831381d-6324-4d53-ad4f-8cda48b30811';
+    const SS_METHOD = 'aes-256-gcm';
+    const SS_PASSWORD = 'virgozki';
+
+    let currentHost = window.location.hostname || '127.0.0.1';
+
+    const PROTOCOLS = [
+        'vless',
+        'trojan',
+        'vmess',
+        'shadowsocks'
+    ];
+
+    const PROTOCOL_LABELS = {
+        vless:'VLESS',
+        trojan:'Trojan',
+        vmess:'VMess',
+        shadowsocks:'Shadowsocks'
+    };
+
+    const TRANSPORTS = [
+        'ws',
+        'httpupgrade',
+        'xhttp',
+        'grpc'
+    ];
+
+    const TRANSPORT_LABELS = {
+        ws:'WebSocket',
+        httpupgrade:'HTTP Upgrade',
+        xhttp:'XHTTP',
+        grpc:'gRPC'
+    };
+
+    const PATHS = {
+
+        vless: {
+            ws:'/vless-virgozki',
+            httpupgrade:'/vless-virgozki-hu',
+            xhttp:'/vless-virgozki-xhttp',
+            grpc:'vless-grpc-virgozki'
+        },
+
+        trojan: {
+            ws:'/virgozki',
+            httpupgrade:'/virgozki-hu',
+            xhttp:'/virgozki-xhttp',
+            grpc:'trojan-grpc-virgozki'
+        },
+
+        vmess: {
+            ws:'/vmess-virgozki',
+            httpupgrade:'/vmess-virgozki-hu',
+            xhttp:'/vmess-virgozki-xhttp',
+            grpc:'vmess-grpc-virgozki'
+        },
+
+        shadowsocks: {
+            ws:'/ss-virgozki',
+            httpupgrade:'/ss-virgozki-hu',
+            xhttp:'/ss-virgozki-xhttp',
+            grpc:'ss-grpc-virgozki'
+        }
+
+    };
+
+    let selectedProtocol = 'vless';
+    let selectedTransport = 'ws';
+    let selectedAddress = currentHost;
+    let selectedSNI = currentHost;
+
+    let addressList = [
+
+        currentHost,
+
+        '⬇️⬇️STS NO LOAD AND BYPASS⬇️⬇️',
+
+        'firebase.googleapis.com',
+        'google.com',
+        'firebase-settings.googleapis.com',
+        'payments.googleapis.com',
+        'run.googleapis.com',
+        'www.gstatic.com',
+        'dl.google.com',
+        'connectivitycheck.gstatic.com',
+        'fcm.googleapis.com',
+        'id.googleapis.com',
+        'ssl.gstatic.com',
+        'firebaseremoteconfigrealtime.googleapis.com',
+        'app-analytics-services.com',
+        'firebase-settings.crashlytics.com',
+        'virgozki.googleapis.com',
+        'chart.apis.google.com',
+        'chat.google.com',
+        'mt0.googleapis.com',
+        'vpn.googleapis.com',
+        'redirector.gvt1.com',
+
+        '⬇️⬇️FOR UNLI YOUTUBE ONLY⬇️⬇️',
+
+        'youtube.com',
+        'googlevideo.com'
+
+    ];
+
+    let sniList = [
+
+        currentHost,
+
+        '⬇️⬇️STS NO LOAD⬇️⬇️',
+
+        'fcmtoken.googleapis.com',
+        'api.paymaya.com',
+        'support.maya.ph',
+        'firebase-settings.crashlytics.com',
+        'firebaseinstallations.googleapis.com',
+        'fonts.googleapis.com',
+        'virgozki.googleapis.com',
+        'cdn-settings.appsflyersdk.com',
+        'benefits-client-production.voyagerapis.com',
+        'firebaseremoteconfigrealtime.googleapis.com',
+        'app-analytics-services.com',
+
+        '⬇️⬇️DITO BYPASS IWANTTFC⬇️⬇️',
+
+        'qa.iwanttfc.com',
+        'help.iwanttfc.com',
+        'support.iwanttfc.com',
+        'api.iwanttfc.com',
+        'iwant-trailer.akamaized.net',
+
+        '⬇️⬇️FOR UNLI YOUTUBE ONLY⬇️⬇️',
+
+        'youtube.com',
+        'googlevideo.com',
+
+        '⬇️⬇️BYPASS UNLI TIKTOK FOR STS, GTM AND DITO⬇️⬇️',
+
+        'api24-normal.tiktokv.com',
+        'api24-normal-alisg.tiktokv.com',
+        'api24-normal-useast1a.tiktokv.com',
+        'tiktok.surf2sawa.org',
+        'tiktok.com',
+        'www.tiktok.com',
+        'm.tiktok.com'
+
+    ];
+
+    const audio = new Audio();
+
+    audio.volume = 0.7;
+    audio.preload = 'metadata';
+
+    const songs = [
+
+        {
+            name: 'NEFFEX - Control',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/5qeqe89ibmyikcj7dmgie/NEFFEX-Control-Official-Lyric-Video-Copyright-Free-No.242-MP3_160K.mp3?rlkey=8mec522bb0mycbgeiw3b2p1st&dl=1'
+        },
+
+        {
+            name: 'NEFFEX - Crown',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/z4sbip8lthzy5piuolpn2/NEFFEX-Crown-Copyright-Free-No.15-MP3_160K.mp3?rlkey=7gf528zikfyrxeav2blxh2ixl&dl=1'
+        },
+
+        {
+            name: 'NEFFEX - Fight Back',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/3pjn86px04k8mq7q5q3h6/NEFFEX-Fight-Back-Official-Video-No.37-MP3_160K.mp3?rlkey=k1j7x2woagxujekwxano6n4ge&dl=1'
+        },
+
+        {
+            name: 'NEFFEX - Purpose',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/ixhlx1kiw3gqnij817rz7/NEFFEX-Purpose-Copyright-Free-No.177-MP3_160K.mp3?rlkey=civmcmnzols7yy2b64dduiq8y&dl=1'
+        },
+
+        {
+            name: 'NEFFEX - Rumors',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/6trrxr9mcu9mhbl061dkj/NEFFEX-Rumors-Lyrics-MP3_160K.mp3?rlkey=fh14ss4axvmt4up01c467nrxk&dl=1'
+        },
+
+        {
+            name: 'NEFFEX - Best of Me',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/rypimhnwa3f0sc7becgz8/NEFFEX-Best-of-Me-Copyright-Free-No.23-MP3_160K.mp3?rlkey=l6fqcjlklv2f08g8v9du23fb3&dl=1'
+        },
+
+        {
+            name: 'NEFFEX - Chance',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/cyxhytondpo74u1mbqdl5/NEFFEX-Chance-Copyright-Free-No.65-MP3_160K.mp3?rlkey=ha1km8kbvg6f8va6sozefdw96&dl=1'
+        },
+
+        {
+            name: 'NEFFEX - Cold',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/3sxfjqb6ph9tfv6k1cz0h/NEFFEX-Cold-Copyright-Free-No.60-MP3_160K.mp3?rlkey=2wxp3ofoq9v26vxd9fh3iq9er&dl=1'
+        },
+
+        {
+            name: 'NEFFEX - Grateful',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/v5419s2y2klq6ookxpzrd/NEFFEX-Grateful-Copyright-Free-No.54-MP3_160K.mp3?rlkey=6to3htylrlnxsru26ik2neds1&dl=1'
+        },
+
+        {
+            name: 'NEFFEX - Life',
+            url: 'https://dl.dropboxusercontent.com/scl/fi/uw1f789tb9v4i2k4xyw42/NEFFEX-Life-Copyright-Free-No.42-MP3_160K.mp3?rlkey=y9y56c3ui6f8kx8ar6l2f9pzv&dl=1'
+        }
+
+    ];
+
+    let currentSongIndex = 0;
+    let isPlaying = false;
+
+    const loadingScreen = document.getElementById('loading-screen');
+    const mainContent = document.getElementById('main-content');
+
+    const infoHost = document.getElementById('info-host');
+    const infoSni = document.getElementById('info-sni');
+    const infoProto = document.getElementById('info-proto');
+    const infoTransport = document.getElementById('info-transport');
+
+    const configDisplay = document.getElementById('config-display');
+    const copyBtn = document.getElementById('copy-btn');
+
+    const addressBtn = document.getElementById('address-btn');
+    const addressSelected = document.getElementById('address-selected');
+    const addressModal = document.getElementById('address-modal');
+    const addressListEl = document.getElementById('address-list');
+    const addressClose = document.getElementById('address-close');
+
+    const sniBtn = document.getElementById('sni-btn');
+    const sniSelected = document.getElementById('sni-selected');
+    const sniModal = document.getElementById('sni-modal');
+    const sniListEl = document.getElementById('sni-list');
+    const sniClose = document.getElementById('sni-close');
+
+    const protoButtons = document.getElementById('proto-buttons');
+    const transButtons = document.getElementById('trans-buttons');
+
+    const playBtn = document.getElementById('play');
+    const songName = document.getElementById('song-name');
+    const player = document.getElementById('floating-player');
+    const dragHandle = document.querySelector('.player-drag-handle');
+
+    const mainStatusCard = document.getElementById('main-status-card');
+    const mainStatusIcon = document.getElementById('main-status-icon');
+    const mainStatusText = document.getElementById('main-status-text');
+    const mainStatusDesc = document.getElementById('main-status-desc');
+
+    const userIpEl = document.getElementById('user-ip');
+    const userCountryEl = document.getElementById('user-country');
+    const userCityEl = document.getElementById('user-city');
+
+    const serverStatusEl = document.getElementById('server-status');
+    const pingValueEl = document.getElementById('ping-value');
+    const serverUptimeEl = document.getElementById('server-uptime');
+
+    const miniGraphCanvas = document.getElementById('mini-ping-graph');
+    const miniGraphCtx = miniGraphCanvas.getContext('2d');
+
+    const systemLogArea = document.getElementById('system-log-area');
+    const clearLogBtn = document.getElementById('clear-log');
+
+    let isDragging = false;
+    let offsetX;
+    let offsetY;
+
+    let monitorInterval = null;
+    let latencyHistory = [];
+    let serverStartTime = Date.now();
+
+    // SYSTEM LOG FUNCTION
+    function addSystemLog(message, type = 'info') {
+
+        const now = new Date();
+
+        const timeStr = now.toLocaleTimeString('tl-PH', {
+            hour12: false
+        });
+
+        const line = document.createElement('div');
+
+        line.className = 'log-line';
+
+        const typeClass =
+            type === 'success'
+                ? 'log-success'
+                : type === 'error'
+                ? 'log-error'
+                : type === 'warning'
+                ? 'log-warning'
+                : 'log-info';
+
+        line.innerHTML =
+            `<span class="log-time">[${timeStr}]</span> <span class="${typeClass}">${message}</span>`;
+
+        systemLogArea.appendChild(line);
+
+        systemLogArea.scrollTop = systemLogArea.scrollHeight;
+
+    }
+
+    // CLEAR LOG
+    clearLogBtn.addEventListener('click', () => {
+
+        systemLogArea.innerHTML = '';
+
+        addSystemLog(
+            'Na-clear ang system log',
+            'info'
+        );
+
+    });
+
+    // DRAG MUSIC PLAYER
+    dragHandle.addEventListener('mousedown', e => {
+
+        isDragging = true;
+
+        offsetX =
+            e.clientX -
+            player.getBoundingClientRect().left;
+
+        offsetY =
+            e.clientY -
+            player.getBoundingClientRect().top;
+
+        addSystemLog(
+            'Inilipat ang music player',
+            'info'
+        );
+
+    });
+
+    document.addEventListener('mousemove', e => {
+
+        if (!isDragging) return;
+
+        let x = e.clientX - offsetX;
+        let y = e.clientY - offsetY;
+
+        const w = player.offsetWidth;
+        const h = player.offsetHeight;
+
+        x = Math.max(
+            0,
+            Math.min(x, window.innerWidth - w)
+        );
+
+        y = Math.max(
+            0,
+            Math.min(y, window.innerHeight - h)
+        );
+
+        player.style.left = x + 'px';
+        player.style.top = y + 'px';
+
+        player.style.right = 'auto';
+        player.style.bottom = 'auto';
+
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    dragHandle.addEventListener('touchstart', e => {
+
+        isDragging = true;
+
+        const t = e.touches[0];
+
+        offsetX =
+            t.clientX -
+            player.getBoundingClientRect().left;
+
+        offsetY =
+            t.clientY -
+            player.getBoundingClientRect().top;
+
+        e.preventDefault();
+
+        addSystemLog(
+            'Inilipat ang music player (touch)',
+            'info'
+        );
+
+    });
+
+    document.addEventListener('touchmove', e => {
+
+        if (!isDragging) return;
+
+        const t = e.touches[0];
+
+        let x = t.clientX - offsetX;
+        let y = t.clientY - offsetY;
+
+        const w = player.offsetWidth;
+        const h = player.offsetHeight;
+
+        x = Math.max(
+            0,
+            Math.min(x, window.innerWidth - w)
+        );
+
+        y = Math.max(
+            0,
+            Math.min(y, window.innerHeight - h)
+        );
+
+        player.style.left = x + 'px';
+        player.style.top = y + 'px';
+
+        player.style.right = 'auto';
+        player.style.bottom = 'auto';
+
+        e.preventDefault();
+
+    });
+
+    document.addEventListener('touchend', () => {
+        isDragging = false;
+    });
+
+    // MUSIC
+    function loadSong(i) {
+
+        songName.textContent = songs[i].name;
+
+        audio.src = songs[i].url;
+
+        addSystemLog(
+            `Kantang na-load: ${songs[i].name}`,
+            'info'
+        );
+
+        audio.onerror = () => {
+
+            addSystemLog(
+                `⚠️ Hindi ma-play ang: ${songs[i].name} - lumilipat sa susunod`,
+                'warning'
+            );
+
+            console.log(
+                "⚠️ Hindi ma-play ang kanta, lumilipat..."
+            );
+
+            setTimeout(() => {
+
+                if (currentSongIndex < songs.length - 1) {
+                    nextSong();
+                }
+
+            }, 1500);
+
+        };
+
+    }
+
+    function togglePlay() {
+
+        audio.play()
+            .then(() => {
+
+                isPlaying = true;
+
+                playBtn.textContent = '⏸';
+
+                addSystemLog(
+                    'Musikang nagsimula',
+                    'success'
+                );
+
+            })
+            .catch(e => {
+
+                addSystemLog(
+                    'Hindi ma-play ang musika - pindutin ulit',
+                    'warning'
+                );
+
+                console.log(
+                    "ℹ️ Pindutin ulit para mag-play:",
+                    e
+                );
+
+                isPlaying = false;
+
+                playBtn.textContent = '▶';
+
+            });
+
+    }
+
+    function nextSong() {
+
+        currentSongIndex =
+            (currentSongIndex + 1) % songs.length;
+
+        loadSong(currentSongIndex);
+
+        if (isPlaying) {
+            audio.play().catch(e => {});
+        }
+
+        addSystemLog(
+            'Lumipat sa susunod na kanta',
+            'info'
+        );
+
+    }
+
+    function prevSong() {
+
+        currentSongIndex =
+            (currentSongIndex - 1 + songs.length) % songs.length;
+
+        loadSong(currentSongIndex);
+
+        if (isPlaying) {
+            audio.play().catch(e => {});
+        }
+
+        addSystemLog(
+            'Bumalik sa nakaraang kanta',
+            'info'
+        );
+
+    }
+
+    function stopMusic() {
+
+        audio.pause();
+
+        audio.currentTime = 0;
+
+        isPlaying = false;
+
+        playBtn.textContent = '▶';
+
+        addSystemLog(
+            'Itinigil ang musika',
+            'info'
+        );
+
+    }
+
+    // CONFIG GENERATOR
+    function buildConfig() {
+
+        const addr = selectedAddress;
+        const sni = selectedSNI;
+        const host = currentHost;
+
+        const path =
+            PATHS[selectedProtocol][selectedTransport];
+
+        let alpnVal =
+            selectedTransport === 'grpc' ||
+            selectedTransport === 'xhttp'
+                ? 'h2,http/1.1'
+                : 'http/1.1';
+
+        let transportParam = '';
+
+        if (selectedTransport === 'grpc') {
+
+            transportParam =
+                `type=grpc&serviceName=${encodeURIComponent(path)}&host=${host}`;
+
+        } else if (selectedTransport === 'ws') {
+
+            transportParam =
+                `type=ws&path=${encodeURIComponent(path)}&host=${host}`;
+
+        } else if (selectedTransport === 'httpupgrade') {
+
+            transportParam =
+                `type=httpupgrade&path=${encodeURIComponent(path)}&host=${host}`;
+
+        } else if (selectedTransport === 'xhttp') {
+
+            transportParam =
+                `type=xhttp&path=${encodeURIComponent(path)}&host=${host}&mode=packet-upstream`;
+
+        }
+
+        switch (selectedProtocol) {
+
+            case 'vless':
+
+                return `vless://${UUID}@${addr}:443?encryption=none&${transportParam}&security=tls&fp=chrome&sni=${sni}&alpn=${encodeURIComponent(alpnVal)}#VLESS-${selectedTransport.toUpperCase()}-VIRGOZKI`;
+
+            case 'trojan':
+
+                return `trojan://${SS_PASSWORD}@${addr}:443?${transportParam}&security=tls&fp=chrome&sni=${sni}&alpn=${encodeURIComponent(alpnVal)}#TROJAN-${selectedTransport.toUpperCase()}-VIRGOZKI`;
+
+            case 'vmess':
+
+                return `vmess://${btoa(JSON.stringify({
+
+                    v: '2',
+
+                    ps:
+                        `VMESS-${selectedTransport.toUpperCase()}-VIRGOZKI`,
+
+                    add: addr,
+
+                    port: '443',
+
+                    id: UUID,
+
+                    aid: '0',
+
+                    scy: 'auto',
+
+                    net: selectedTransport,
+
+                    host: host,
+
+                    ...(selectedTransport === 'grpc'
+                        ? {serviceName: path}
+                        : {path: path}),
+
+                    tls: 'tls',
+
+                    sni: sni,
+
+                    fp: 'chrome',
+
+                    alpn: alpnVal
+
+                })).replace(/=+$/, '')}`;
+
+            case 'shadowsocks':
+
+                const ssCred =
+                    btoa(
+                        `${SS_METHOD}:${SS_PASSWORD}`
+                    ).replace(/=+$/, '');
+
+                return `ss://${ssCred}@${addr}:443?${transportParam}&security=tls&sni=${sni}#SS-${selectedTransport.toUpperCase()}-VIRGOZKI`;
+
+        }
+
+    }
+
+    function buildList(container, items, type) {
+
+        container.innerHTML = '';
+
+        items.forEach(item => {
+
+            const el =
+                document.createElement('div');
+
+            el.className = 'modal-item';
+
+            el.textContent = item;
+
+            el.addEventListener('click', () => {
+
+                if (type === 'address') {
+
+                    selectedAddress = item;
+
+                    addressSelected.textContent =
+                        'Napili: ' + item;
+
+                    addressBtn.textContent =
+                        item + ' ▾';
+
+                    addressModal.classList.remove('show');
+
+                    addSystemLog(
+                        `Napiling address: ${item}`,
+                        'success'
+                    );
+
+                } else {
+
+                    selectedSNI = item;
+
+                    sniSelected.textContent =
+                        'Napili: ' + item;
+
+                    sniBtn.textContent =
+                        item + ' ▾';
+
+                    sniModal.classList.remove('show');
+
+                    addSystemLog(
+                        `Napiling SNI: ${item}`,
+                        'success'
+                    );
+
+                }
+
+                updateUI();
+
+            });
+
+            container.appendChild(el);
+
+        });
+
+    }
+
+    // FIXED BUILD OPTIONS
+    function buildOptions(container, items, sel, lbl, cb) {
+
+        container.innerHTML = '';
+
+        items.forEach(i => {
+
+            const b =
+                document.createElement('button');
+
+            b.className =
+                'option-btn' +
+                (i === sel ? ' active' : '');
+
+            b.textContent =
+                lbl ? lbl[i] : i;
+
+            b.addEventListener('click', () => {
+
+                container
+                    .querySelectorAll('.option-btn')
+                    .forEach(x =>
+                        x.classList.remove('active')
+                    );
+
+                b.classList.add('active');
+
+                cb(i);
+
+                updateUI();
+
+                addSystemLog(
+                    `Napiling option: ${lbl[i]}`,
+                    'info'
+                );
+
+            });
+
+            container.appendChild(b);
+
+        });
+
+    }
+
+    // MINI GRAPH
+    function renderMiniGraph() {
+
+        const w =
+            miniGraphCanvas.width =
+            miniGraphCanvas.offsetWidth * 2;
+
+        const h =
+            miniGraphCanvas.height =
+            miniGraphCanvas.offsetHeight * 2;
+
+        // FIX: reset transform bago mag-scale
+        miniGraphCtx.setTransform(
+            1, 0, 0, 1, 0, 0
+        );
+
+        miniGraphCtx.scale(2, 2);
+
+        const cw = w / 2;
+        const ch = h / 2;
+
+        miniGraphCtx.clearRect(
+            0,
+            0,
+            cw,
+            ch
+        );
+
+        if (latencyHistory.length < 2) return;
+
+        const maxP =
+            Math.max(...latencyHistory) + 20;
+
+        const step =
+            cw / (latencyHistory.length - 1);
+
+        const grad =
+            miniGraphCtx.createLinearGradient(
+                0,
+                0,
+                0,
+                ch
+            );
+
+        grad.addColorStop(
+            0,
+            'rgba(147,197,253,0.2)'
+        );
+
+        grad.addColorStop(
+            1,
+            'rgba(147,197,253,0)'
+        );
+
+        miniGraphCtx.beginPath();
+
+        miniGraphCtx.moveTo(
+            0,
+            ch -
+                (latencyHistory[0] / maxP) *
+                ch
+        );
+
+        latencyHistory.forEach((p, i) => {
+
+            miniGraphCtx.lineTo(
+                i * step,
+                ch -
+                    (p / maxP) *
+                    ch
+            );
+
+        });
+
+        miniGraphCtx.lineTo(cw, ch);
+
+        miniGraphCtx.lineTo(0, ch);
+
+        miniGraphCtx.fillStyle = grad;
+
+        miniGraphCtx.fill();
+
+        miniGraphCtx.beginPath();
+
+        miniGraphCtx.moveTo(
+            0,
+            ch -
+                (latencyHistory[0] / maxP) *
+                ch
+        );
+
+        latencyHistory.forEach((p, i) => {
+
+            miniGraphCtx.lineTo(
+                i * step,
+                ch -
+                    (p / maxP) *
+                    ch
+            );
+
+        });
+
+        miniGraphCtx.strokeStyle =
+            '#93c5fd';
+
+        miniGraphCtx.lineWidth = 1.5;
+
+        miniGraphCtx.stroke();
+
+    }
+
+    // SERVER UPTIME
+    function updateServerUptime() {
+
+        const diffMs =
+            Date.now() - serverStartTime;
+
+        const days =
+            Math.floor(diffMs / 86400000);
+
+        const hours =
+            Math.floor(
+                (diffMs % 86400000) / 3600000
+            );
+
+        const mins =
+            Math.floor(
+                (diffMs % 3600000) / 60000
+            );
+
+        const secs =
+            Math.floor(
+                (diffMs % 60000) / 1000
+            );
+
+        let uptimeStr = '';
+
+        if (days > 0)
+            uptimeStr += `${days}d `;
+
+        if (hours > 0 || days > 0)
+            uptimeStr += `${hours}h `;
+
+        if (
+            mins > 0 ||
+            hours > 0 ||
+            days > 0
+        )
+            uptimeStr += `${mins}m `;
+
+        uptimeStr += `${secs}s`;
+
+        serverUptimeEl.textContent =
+            uptimeStr;
+
+    }
+
+    // KUNIN IP
+    async function fetchUserLocation() {
+
+        try {
+
+            addSystemLog(
+                'Kinukuha ang iyong lokasyon...',
+                'info'
+            );
+
+            const res =
+                await fetch(
+                    'https://ipapi.co/json/'
+                );
+
+            const data =
+                await res.json();
+
+            userIpEl.textContent =
+                data.ip || 'Hindi makuha';
+
+            userCountryEl.textContent =
+                data.country_name ||
+                'Hindi makuha';
+
+            userCityEl.textContent =
+                data.city ||
+                'Hindi makuha';
+
+            addSystemLog(
+                `Lokasyon nakuha: ${data.city}, ${data.country_name} | IP: ${data.ip}`,
+                'success'
+            );
+
+        } catch {
+
+            userIpEl.textContent =
+                'Hindi makuha';
+
+            userCountryEl.textContent =
+                'Hindi makuha';
+
+            userCityEl.textContent =
+                'Hindi makuha';
+
+            addSystemLog(
+                'Hindi ma-kuha ang lokasyon at IP',
+                'error'
+            );
+
+        }
+
+    }
+
+    // SERVER CHECK
+    async function checkServerStatus() {
+
+        const t1 =
+            performance.now();
+
+        const testUrl =
+            `https://${selectedAddress}:443?${Date.now()}`;
+
+        let isOnline = false;
+        let ping = 999;
+
+        try {
+
+            const ctrl =
+                new AbortController();
+
+            const timeout =
+                setTimeout(
+                    () => ctrl.abort(),
+                    3000
+                );
+
+            await fetch(
+                testUrl,
+                {
+                    mode: 'no-cors',
+                    signal: ctrl.signal
+                }
+            );
+
+            clearTimeout(timeout);
+
+            ping =
+                Math.round(
+                    performance.now() - t1
+                );
+
+            isOnline = true;
+
+        } catch {
+
+            ping =
+                Math.round(
+                    performance.now() - t1
+                );
+
+            isOnline = false;
+
+        }
+
+        latencyHistory.push(ping);
+
+        if (latencyHistory.length > 12)
+            latencyHistory.shift();
+
+        renderMiniGraph();
+
+        if (isOnline) {
+
+            mainStatusCard.className =
+                'vpn-status-card connected';
+
+            mainStatusIcon.className =
+                'status-indicator connected';
+
+            mainStatusIcon.textContent = '✓';
+
+            mainStatusText.textContent =
+                'CONNECTED';
+
+            mainStatusDesc.textContent =
+                'VIRGOZKI VPN PANEL';
+
+            serverStatusEl.textContent =
+                'ONLINE';
+
+            serverStatusEl.className =
+                'monitor-item-value success';
+
+            pingValueEl.textContent =
+                `${ping} ms`;
+
+            pingValueEl.className =
+                ping < 150
+                    ? 'monitor-item-value success'
+                    : ping < 300
+                    ? 'monitor-item-value warning'
+                    : 'monitor-item-value error';
+
+            addSystemLog(
+                `Server Online | Ping: ${ping}ms`,
+                'success'
+            );
+
+        } else {
+
+            mainStatusCard.className =
+                'vpn-status-card disconnected';
+
+            mainStatusIcon.className =
+                'status-indicator disconnected';
+
+            mainStatusIcon.textContent = '✕';
+
+            mainStatusText.textContent =
+                'HINDI KAPA NAKA CONNECT';
+
+            // FIX: mainStatusDescDesc -> mainStatusDesc
+            mainStatusDesc.textContent =
+                'Pumili muna ng address at SNI';
+
+            serverStatusEl.textContent =
+                'OFFLINE';
+
+            serverStatusEl.className =
+                'monitor-item-value error';
+
+            pingValueEl.textContent =
+                `${ping} ms`;
+
+            pingValueEl.className =
+                'monitor-item-value error';
+
+            addSystemLog(
+                `Server Offline | Ping: ${ping}ms`,
+                'error'
+            );
+
+        }
+
+        updateServerUptime();
+
+    }
+
+    function startMonitor() {
+
+        if (monitorInterval)
+            clearInterval(monitorInterval);
+
+        latencyHistory = [];
+
+        mainStatusCard.className =
+            'vpn-status-card checking';
+
+        mainStatusIcon.className =
+            'status-indicator checking';
+
+        mainStatusIcon.textContent = '⟳';
+
+        mainStatusText.textContent =
+            'SINUSURI ANG SERVER...';
+
+        mainStatusDesc.textContent =
+            'Naghihintay ng tugon...';
+
+        serverStatusEl.textContent =
+            'SINUSURI';
+
+        serverStatusEl.className =
+            'monitor-item-value warning';
+
+        pingValueEl.textContent =
+            '---';
+
+        pingValueEl.className =
+            'monitor-item-value';
+
+        serverUptimeEl.textContent =
+            'NAGBUBUO...';
+
+        addSystemLog(
+            'Sinimulan ang server monitoring',
+            'info'
+        );
+
+        fetchUserLocation();
+
+        checkServerStatus();
+
+        monitorInterval =
+            setInterval(
+                checkServerStatus,
+                5000
+            );
+
+        setInterval(
+            updateServerUptime,
+            1000
+        );
+
+    }
+
+    function updateUI() {
+
+        infoHost.textContent =
+            selectedAddress;
+
+        infoSni.textContent =
+            selectedSNI;
+
+        infoProto.textContent =
+            PROTOCOL_LABELS[selectedProtocol];
+
+        infoTransport.textContent =
+            TRANSPORT_LABELS[selectedTransport];
+
+        configDisplay.value =
+            buildConfig();
+
+        addSystemLog(
+            'Na-update ang lahat ng impormasyon at config',
+            'info'
+        );
+
+        startMonitor();
+
+    }
+
+    // SIMULA
+    window.addEventListener('load', () => {
+
+        setTimeout(() => {
+
+            loadingScreen.classList.add('hidden');
+
+            mainContent.style.display =
+                'flex';
+
+            addSystemLog(
+                'Na-load nang buo ang VIRGOZKI PANEL',
+                'success'
+            );
+
+            buildList(
+                addressListEl,
+                addressList,
+                'address'
+            );
+
+            buildList(
+                sniListEl,
+                sniList,
+                'sni'
+            );
+
+            buildOptions(
+                protoButtons,
+                PROTOCOLS,
+                selectedProtocol,
+                PROTOCOL_LABELS,
+                v => {
+
+                    selectedProtocol = v;
+
+                    addSystemLog(
+                        `Pinalitan ang Protocol: ${PROTOCOL_LABELS[v]}`,
+                        'info'
+                    );
+
+                }
+            );
+
+            buildOptions(
+                transButtons,
+                TRANSPORTS,
+                selectedTransport,
+                TRANSPORT_LABELS,
+                v => {
+
+                    selectedTransport = v;
+
+                    addSystemLog(
+                        `Pinalitan ang Transport: ${TRANSPORT_LABELS[v]}`,
+                        'info'
+                    );
+
+                }
+            );
+
+            addressBtn.addEventListener(
+                'click',
+                () => {
+
+                    addressModal.classList.add('show');
+
+                    addSystemLog(
+                        'Binuksan ang Address list',
+                        'info'
+                    );
+
+                }
+            );
+
+            addressClose.addEventListener(
+                'click',
+                () =>
+                    addressModal.classList.remove('show')
+            );
+
+            sniBtn.addEventListener(
+                'click',
+                () => {
+
+                    sniModal.classList.add('show');
+
+                    addSystemLog(
+                        'Binuksan ang SNI list',
+                        'info'
+                    );
+
+                }
+            );
+
+            sniClose.addEventListener(
+                'click',
+                () =>
+                    sniModal.classList.remove('show')
+            );
+
+            playBtn.addEventListener(
+                'click',
+                () => {
+
+                    if (isPlaying) {
+
+                        audio.pause();
+
+                        isPlaying = false;
+
+                        playBtn.textContent = '▶';
+
+                        addSystemLog(
+                            'Pinause ang musika',
+                            'info'
+                        );
+
+                    } else {
+
+                        togglePlay();
+
+                    }
+
+                }
+            );
+
+            document
+                .getElementById('prev')
+                .addEventListener(
+                    'click',
+                    prevSong
+                );
+
+            document
+                .getElementById('stop')
+                .addEventListener(
+                    'click',
+                    stopMusic
+                );
+
+            document
+                .getElementById('next')
+                .addEventListener(
+                    'click',
+                    nextSong
+                );
+
+            audio.addEventListener(
+                'ended',
+                nextSong
+            );
+
+            loadSong(currentSongIndex);
+
+            // COPY CONFIG
+            copyBtn.addEventListener(
+                'click',
+                () => {
+
+                    navigator.clipboard
+                        .writeText(
+                            configDisplay.value
+                        )
+                        .then(() => {
+
+                            copyBtn.textContent =
+                                '✓ READY TO PASTE TO ANY V2RAY VPN!';
+
+                            addSystemLog(
+                                'Na-copy ang config sa clipboard',
+                                'success'
+                            );
+
+                            setTimeout(
+                                () =>
+                                    copyBtn.textContent = 'COPY',
+                                2000
+                            );
+
+                        })
+                        .catch(() => {
+
+                            configDisplay.select();
+
+                            document.execCommand('copy');
+
+                            copyBtn.textContent =
+                                '✓ READY TO PASTE TO ANY V2RAY VPN!';
+
+                            addSystemLog(
+                                'Na-copy ang config sa clipboard (fallback)',
+                                'success'
+                            );
+
+                            setTimeout(
+                                () =>
+                                    copyBtn.textContent = 'COPY',
+                                2000
+                            );
+
+                        });
+
+                }
+            );
+
+            updateUI();
+
+        }, 2500);
+
+    });
+
+})();
+</script>
+
+</body>
+</html>
