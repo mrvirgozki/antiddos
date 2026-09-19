@@ -4,40 +4,41 @@ set -eu
 PORT="${PORT:-8080}"
 
 echo "======================================"
-echo "Starting Virgozki container"
-echo "Cloud Run PORT: $PORT"
+echo "🚀 Starting Virgozki container"
+echo "🌐 Cloud Run PORT: $PORT"
 echo "======================================"
 
-echo "Configuring OpenResty port..."
-
-sed -i -E "s/listen[[:space:]]+[^;]+;/listen 0.0.0.0:${PORT};/" \
+# Replace the fixed Nginx port with Cloud Run's PORT
+sed -i "s/listen 8080 http2;/listen $PORT http2;/" \
     /usr/local/openresty/nginx/conf/nginx.conf
 
-echo "Testing OpenResty configuration..."
+echo "🔍 Testing OpenResty configuration..."
 
-if ! /usr/local/openresty/bin/openresty -t; then
-    echo "ERROR: OpenResty configuration test failed"
-    exit 1
-fi
+/usr/local/openresty/bin/openresty -t
 
-echo "OpenResty configuration OK"
-
-echo "Starting Xray..."
-
-/usr/local/bin/xray run \
-    -config /etc/xray.json \
-    > /dev/stdout 2> /dev/stderr &
-
+echo "🚀 Starting Xray..."
+/usr/local/bin/xray run -config /etc/xray.json &
 XRAY_PID=$!
 
-sleep 1
+# Clean shutdown
+cleanup() {
+    echo "🛑 Stopping Xray..."
+    kill -TERM "$XRAY_PID" 2>/dev/null || true
+}
 
-if ! kill -0 "$XRAY_PID" 2>/dev/null; then
-    echo "WARNING: Xray stopped during startup"
-else
-    echo "Xray started"
-fi
+trap cleanup TERM INT
 
-echo "Starting OpenResty on 0.0.0.0:${PORT}..."
+echo "🌐 Starting OpenResty on port $PORT..."
 
-exec /usr/local/openresty/bin/openresty -g "daemon off;"
+/usr/local/openresty/bin/openresty -g "daemon off;" &
+NGINX_PID=$!
+
+# Keep both processes supervised
+wait "$NGINX_PID"
+STATUS=$?
+
+echo "⚠️ OpenResty stopped with status: $STATUS"
+
+cleanup
+
+exit "$STATUS"
